@@ -1,0 +1,14 @@
+/* resources/css/app.css */
+
+/* You can now write standard CSS here */
+body {
+    background-color: #f4f4f4;
+    font-family: Arial, sans-serif;
+}
+
+.my-button {
+    background: blue;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+}
