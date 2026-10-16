@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Building Super Mart: From Client–Server to MVC</title>
+<style>
+  @page { size: A4; margin: 2.2cm 2cm; }
+  body {
+    font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+    font-size: 11.5pt;
+    line-height: 1.55;
+    color: #1a1a1a;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+  h1 { font-size: 26pt; color: #0b3d2e; margin: 0 0 4px; line-height: 1.15; }
+  h2 { font-size: 17pt; color: #0b3d2e; border-bottom: 2px solid #0b3d2e; padding-bottom: 4px; margin-top: 38px; }
+  h3 { font-size: 13.5pt; color: #145c46; margin-top: 26px; }
+  h4 { font-size: 11.5pt; color: #333; margin-top: 18px; margin-bottom: 4px; }
+  p { margin: 8px 0; }
+  ul, ol { margin: 8px 0 8px 0; padding-left: 26px; }
+  li { margin: 4px 0; }
+  .subtitle { font-size: 13pt; color: #555; margin-top: 0; }
+  .meta { color: #777; font-size: 10pt; margin-top: 2px; }
+  code {
+    font-family: "Consolas", "Courier New", monospace;
+    background: #f3f3f3;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 9.8pt;
+    color: #b33;
+  }
+  pre {
+    background: #f6f8fa;
+    border: 1px solid #e1e4e8;
+    border-left: 4px solid #0b3d2e;
+    border-radius: 4px;
+    padding: 12px 14px;
+    overflow-x: auto;
+    font-size: 9.6pt;
+    line-height: 1.45;
+  }
+  pre code { background: none; color: #1a1a1a; padding: 0; font-size: 9.6pt; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 10.5pt; }
+  th, td { border: 1px solid #ccc; padding: 7px 9px; text-align: left; vertical-align: top; }
+  th { background: #0b3d2e; color: #fff; font-weight: 600; }
+  tr:nth-child(even) td { background: #f7f9f8; }
+  .callout {
+    background: #f0f7f4;
+    border-left: 4px solid #2a9d6f;
+    padding: 10px 14px;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .warn {
+    background: #fff8e8;
+    border-left: 4px solid #d9a200;
+    padding: 10px 14px;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .toc { background: #f7f9f8; border: 1px solid #e1e4e8; padding: 16px 22px; border-radius: 6px; margin: 24px 0; }
+  .toc h2 { margin-top: 0; border: none; font-size: 14pt; }
+  .toc ol { margin: 6px 0; }
+  .toc a { text-decoration: none; color: #0b3d2e; }
+  .diagram { background: #f7f9f8; border: 1px solid #e1e4e8; border-radius: 6px; padding: 16px; margin: 16px 0; font-family: "Consolas", monospace; font-size: 9.4pt; white-space: pre; line-height: 1.4; overflow-x: auto; }
+  .kicker { text-transform: uppercase; letter-spacing: 2px; font-size: 9pt; color: #2a9d6f; font-weight: 600; }
+  .footer { margin-top: 50px; border-top: 1px solid #ccc; padding-top: 12px; color: #777; font-size: 9.5pt; }
+  hr { border: none; border-top: 1px solid #e1e4e8; margin: 30px 0; }
+</style>
+</head>
+<body>
+
+<h1>Building Super Mart</h1>
+<p class="subtitle">From Client–Server–Database to MVC, Laravel, and a Working Web App</p>
+<p class="meta">A beginner-friendly walkthrough of how the Super Mart grocery store was conceived and built, covering every concept in between.</p>
+
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li>Introduction: Why This Project Exists</li>
+    <li>How the Web Works: Client, Server, and Database</li>
+    <li>What Is MVC Architecture?</li>
+    <li>Meet Laravel: A Framework That Speaks MVC</li>
+    <li>Designing Super Mart: The Domain</li>
+    <li>Setting Up the Project</li>
+    <li>The Model Layer: Data and Relationships</li>
+    <li>The Database: Migrations and Schema</li>
+    <li>The Controller Layer: Thin Coordinators</li>
+    <li>Routing: Connecting URLs to Controllers</li>
+    <li>Middleware: Gatekeepers Before the Controller</li>
+    <li>The View Layer: Blade Templates</li>
+    <li>Feature: The Storefront</li>
+    <li>Feature: Category Pages</li>
+    <li>Feature: The Shopping Cart</li>
+    <li>Feature: Authentication</li>
+    <li>Feature: The Admin Product Import</li>
+    <li>Putting It All Together: One Request, End to End</li>
+    <li>Bugs We Hit and How We Fixed Them</li>
+    <li>What This Project Taught Us About MVC</li>
+    <li>Glossary</li>
+  </ol>
+</div>
+
+<h2 id="intro">1. Introduction: Why This Project Exists</h2>
+
+<p>Super Mart is a small online grocery store. A visitor can browse categories like Fruits, Dairy, or Meats; see featured and clearance items on the home page; add products to a cart; register and log in; and an administrator can upload a spreadsheet full of products to populate the catalogue.</p>
+
+<p>But the real point of the project is not the groceries. It is to <strong>understand MVC architecture</strong> — the way most modern web frameworks organise code so that the data, the user interface, and the logic that connects them stay cleanly separated.</p>
+
+<p>This document explains the entire journey, starting from the absolute basics of how a web application even works, through the ideas behind MVC and Laravel, and into the concrete code of Super Mart. If you read it in order, you will understand not just what each file does, but <em>why it exists at all</em>.</p>
+
+<h2 id="client-server">2. How the Web Works: Client, Server, and Database</h2>
+
+<p>Before talking about MVC, we need to understand the three machines that participate in almost every web application.</p>
+
+<h3>2.1 The client (the browser)</h3>
+<p>The <strong>client</strong> is the program the user runs — Chrome, Firefox, Safari. It renders HTML, runs JavaScript, and sends <strong>requests</strong> to a server. When you type a URL or click a link, the browser sends an HTTP request.</p>
+
+<p>HTTP is a simple text protocol. A request looks roughly like this:</p>
+<pre><code>GET /category/meats HTTP/1.1
+Host: supermart.test
+Accept: text/html</code></pre>
+<p>The first word (<code>GET</code>) is the <strong>method</strong> — what kind of action you want. The most common are:</p>
+<ul>
+  <li><code>GET</code> — "give me a page."</li>
+  <li><code>POST</code> — "here is some data, save it" (a form submission).</li>
+  <li><code>DELETE</code> — "remove this thing."</li>
+  <li><code>PUT</code>/<code>PATCH</code> — "update this thing."</li>
+</ul>
+
+<h3>2.2 The server (the application)</h3>
+<p>The <strong>server</strong> is a program running on another machine that listens for these requests and produces responses. In our case the server is a PHP application powered by Laravel. Its job is:</p>
+<ol>
+  <li>Receive the request.</li>
+  <li>Figure out what the user wants.</li>
+  <li>Talk to the database if needed.</li>
+  <li>Assemble an HTML response.</li>
+  <li>Send it back.</li>
+</ol>
+<p>A response looks like:</p>
+<pre><code>HTTP/1.1 200 OK
+Content-Type: text/html
+
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;... (the page) ...&lt;/html&gt;</code></pre>
+
+<h3>2.3 The database (the memory)</h3>
+<p>The <strong>database</strong> is where permanent data lives. The server forgets everything between requests, so anything that must survive — users, products, orders — is stored in a database. Super Mart uses <strong>SQLite</strong>, a lightweight database stored as a single file (<code>database/supermart.sqlite</code>). The data is organised into <strong>tables</strong> (like spreadsheets): a <code>users</code> table, a <code>categories</code> table, an <code>items</code> table.</p>
+
+<div class="diagram">  ┌─────────┐   1. HTTP request   ┌─────────┐   3. SQL query  ┌──────────┐
+  │ Client  │ ──────────────────▶ │  Server │ ─────────────▶ │ Database │
+  │ Browser │                    │ (Laravel│                 │ (SQLite) │
+  └─────────┘   4. HTTP response  └─────────┘   2. rows back  └──────────┘
+       ◀──────────────────────────         ◀───────────────
+</div>
+
+<p>So a web app is a conversation: the browser asks, the server thinks and asks the database, the database answers, the server builds a page, and the browser shows it. Everything else in this document is about <em>how the server is organised</em> to do this cleanly.</p>
+
+<h2 id="mvc">3. What Is MVC Architecture?</h2>
+
+<p><strong>MVC</strong> stands for <strong>Model–View–Controller</strong>. It is a way of splitting the code of an application into three distinct responsibilities so that each part has one job. The idea is decades old and underlies most frameworks you will meet (Laravel, Rails, Django, ASP.NET MVC, Spring).</p>
+
+<h3>3.1 The three parts</h3>
+
+<table>
+  <tr><th>Part</th><th>Job</th><th>Rule of thumb</th></tr>
+  <tr><td><strong>Model</strong></td><td>Represents the data and the rules around it: what a User is, what an Item is, how they relate.</td><td>Knows about the database. Does not know about HTML.</td></tr>
+  <tr><td><strong>View</strong></td><td>Renders the user interface. Produces the HTML the browser receives.</td><td>Knows about HTML. Does not know about the database.</td></tr>
+  <tr><td><strong>Controller</strong></td><td>Receives the request, asks the Model for data, hands that data to the View.</td><td>The coordinator. Should stay thin — no heavy logic here.</td></tr>
+</table>
+
+<h3>3.2 The flow</h3>
+<div class="diagram">  Request
+     │
+     ▼
+  ┌────────────┐
+  │ Controller │  ──asks──▶  ┌────────┐
+  │            │              │ Model  │  ──reads──▶  Database
+  │            │  ◀──data──── └────────┘
+  │            │
+  │            │  ──gives data──▶  ┌──────┐
+  │            │                    │ View │  ──produces──▶  HTML
+  │            │  ◀──HTML───────────└──────┘
+  └────────────┘
+     │
+     ▼
+  Response (HTML)
+</div>
+
+<h3>3.3 Why separate them?</h3>
+<p>If you mix everything together — database queries inside HTML, business logic inside templates — the code becomes impossible to change. Separation gives you three gifts:</p>
+<ul>
+  <li><strong>Clarity:</strong> to find where a rule lives, you follow the layer. Data rule? Model. Markup? View. Request handling? Controller.</li>
+  <li><strong>Reuse:</strong> the same Model can feed a web page, an API, or a CLI command.</li>
+  <li><strong>Testability:</strong> you can test a Model without a browser, and a Controller without a database.</li>
+</ul>
+
+<div class="callout"><strong>The one-sentence version:</strong> the Model knows the data, the View knows the screen, the Controller knows the user — and none of them knows more than it should.</div>
+
+<h2 id="laravel">4. Meet Laravel: A Framework That Speaks MVC</h2>
+
+<p><strong>Laravel</strong> is a PHP web framework. PHP is the programming language; Laravel is the structure and the helpers. It is an MVC framework, meaning it gives you ready-made places for each layer:</p>
+<ul>
+  <li><code>app/Models/</code> — your Model classes.</li>
+  <li><code>app/Http/Controllers/</code> — your Controller classes.</li>
+  <li><code>resources/views/</code> — your View templates (written in <strong>Blade</strong>).</li>
+  <li><code>routes/</code> — the files that map URLs to controller methods.</li>
+</ul>
+
+<h3>4.1 Eloquent: the Model engine</h3>
+<p>Laravel's ORM (Object-Relational Mapper) is called <strong>Eloquent</strong>. An ORM lets you work with database rows as if they were objects. Instead of writing raw SQL like <code>SELECT * FROM items WHERE id = 5</code>, you write:</p>
+<pre><code>$item = Item::find(5);
+echo $item->name;</code></pre>
+<p>Each model class maps to a table. The <code>Item</code> model maps to the <code>items</code> table (plural). Eloquent figures that out by convention.</p>
+
+<h3>4.2 Blade: the View engine</h3>
+<p><strong>Blade</strong> is Laravel's templating language. It is HTML with extra directives. <code>{{ $variable }}</code> prints a value (safely, escaped). <code>@if</code>, <code>@foreach</code>, <code>@csrf</code> are Blade directives that compile to PHP. The View never talks to the database; it only uses variables the Controller handed it.</p>
+
+<h3>4.3 Artisan: the command-line tool</h3>
+<p><strong>Artisan</strong> is Laravel's CLI (<code>php artisan ...</code>). It runs migrations, starts the dev server, lists routes, and more. You will see it throughout.</p>
+
+<h3>4.4 Composer and NPM</h3>
+<p><strong>Composer</strong> is PHP's package manager — it installs Laravel and third-party libraries (like the Excel importer) into <code>vendor/</code>. <strong>NPM</strong> handles JavaScript and CSS assets, bundled by <strong>Vite</strong> into <code>public/</code>.</p>
+
+<h2 id="domain">5. Designing Super Mart: The Domain</h2>
+<p>Before writing code, we list what the app needs to model. A supermarket has:</p>
+<ul>
+  <li><strong>Categories</strong> — Fruits, Dairy, Meats, etc. Each has a name, a slug (a URL-friendly version), an icon, and a hero image.</li>
+  <li><strong>Items</strong> (products) — each belongs to a category, has a name, slug, description, image, price, optional sale price, currency, and two flags: <code>is_featured</code> and <code>is_clearance</code>.</li>
+  <li><strong>Users</strong> — visitors who register and log in.</li>
+  <li><strong>A cart</strong> — a temporary collection of items a user wants to buy.</li>
+</ul>
+
+<p>The relationships are simple: a Category <em>has many</em> Items; an Item <em>belongs to</em> a Category. A User is mostly independent for now.</p>
+
+<h2 id="setup">6. Setting Up the Project</h2>
+<p>A Laravel project is created with <code>composer create-project laravel/laravel super-mart</code>. That gives you the skeleton: the <code>app/</code>, <code>routes/</code>, <code>resources/</code>, <code>database/</code>, and <code>config/</code> folders, plus <code>composer.json</code> (PHP dependencies) and <code>package.json</code> (JS dependencies).</p>
+
+<p>The <code>.env</code> file holds configuration that changes per environment — most importantly the database:</p>
+<pre><code>DB_CONNECTION=sqlite
+DB_DATABASE=C:\Users\...\super-mart\database\supermart.sqlite</code></pre>
+
+<p>Setup is automated by a Composer script:</p>
+<pre><code>composer setup   # installs deps, copies .env, generates key, migrates, builds assets</code></pre>
+
+<p>For development, <code>composer dev</code> runs the server, queue, log tail, and Vite all at once.</p>
+
+<h2 id="model">7. The Model Layer: Data and Relationships</h2>
+<p>Models live in <code>app/Models/</code>. Three matter to us: <code>Category</code>, <code>Item</code>, <code>User</code>.</p>
+
+<h3>7.1 The Item model</h3>
+<pre><code>class Item extends Model
+{
+    protected $fillable = [
+        'category_id', 'name', 'slug', 'description', 'image',
+        'price', 'sale_price', 'currency', 'is_clearance', 'is_featured',
+    ];
+
+    public function category(): BelongsTo
+    {
+        return $this-&gt;belongsTo(Category::class);
+    }
+}</code></pre>
+<p>Two ideas here:</p>
+<ul>
+  <li><strong><code>$fillable</code></strong> lists the columns we allow to be mass-assigned. It is a security guard: only these fields can be set via <code>Item::create([...])</code>.</li>
+  <li><strong>The <code>category</code> relationship</strong> says "an Item belongs to a Category." Once defined, you can write <code>$item-&gt;category-&gt;name</code> and Eloquent runs the join for you.</li>
+</ul>
+
+<h3>7.2 The Category model</h3>
+<pre><code>class Category extends Model
+{
+    protected $fillable = ['name', 'slug', 'icon', 'heroimg'];
+
+    public function items(): HasMany
+    {
+        return $this-&gt;hasMany(Item::class);
+    }
+
+    public function getHeroImageUrlAttribute(): string
+    {
+        if (!empty($this-&gt;heroimg) &amp;&amp; file_exists(public_path('images/categories/' . $this-&gt;heroimg))) {
+            return asset('images/categories/' . $this-&gt;heroimg);
+        }
+        return asset('images/categories/default.png');
+    }
+}</code></pre>
+
+<div class="callout"><strong>This is the clearest MVC lesson in the whole project.</strong> The View needs the URL of the category's hero image, and it needs to never show a broken image. Rather than putting that logic in the template (the View), it lives in the Model as an <strong>accessor</strong> — a method <code>getHeroImageUrlAttribute()</code> that Blade reads as <code>$category-&gt;hero_image_url</code>. The template just asks for the value; the Model decides where it comes from. <em>Fat Model, thin View.</em></div>
+
+<h3>7.3 The User model</h3>
+<p>The User model extends <code>Authenticatable</code> (so it can act as a login user), declares <code>$fillable</code> for name/email/password, hides the password and remember token, and casts <code>password</code> as <code>hashed</code> — meaning Laravel automatically hashes it on save and verifies it on check.</p>
+
+<h2 id="database">8. The Database: Migrations and Schema</h2>
+<p>Instead of creating tables by hand in SQL, Laravel uses <strong>migrations</strong> — PHP files that describe changes to the schema. They are version control for your database. Each migration has an <code>up()</code> (apply) and a <code>down()</code> (undo). Run them with <code>php artisan migrate</code>.</p>
+
+<h3>8.1 The categories and items migration</h3>
+<pre><code>Schema::create('categories', function (Blueprint $table) {
+    $table-&gt;id();                 // integer primary key, auto-increment
+    $table-&gt;string('name');
+    $table-&gt;string('slug')-&gt;unique();
+    $table-&gt;string('icon')-&gt;nullable();
+    $table-&gt;string('heroimg')-&gt;nullable();
+    $table-&gt;timestamps();
+});
+
+Schema::create('items', function (Blueprint $table) {
+    $table-&gt;id();
+    $table-&gt;foreignId('category_id')-&gt;constrained()-&gt;cascadeOnDelete();
+    $table-&gt;string('name');
+    $table-&gt;string('slug')-&gt;unique();
+    $table-&gt;text('description')-&gt;nullable();
+    $table-&gt;decimal('price', 10, 2)-&gt;default(0);
+    $table-&gt;decimal('sale_price', 10, 2)-&gt;nullable();
+    $table-&gt;string('currency', 3)-&gt;default('NGN');
+    $table-&gt;boolean('is_clearance')-&gt;default(false);
+    $table-&gt;boolean('is_featured')-&gt;default(false);
+    $table-&gt;timestamps();
+});</code></pre>
+<p>Key ideas:</p>
+<ul>
+  <li><code>$table-&gt;id()</code> makes an auto-incrementing primary key.</li>
+  <li><code>slug-&gt;unique()</code> tells the database to reject duplicate slugs — a rule the DB enforces, not the app.</li>
+  <li><code>foreignId('category_id')-&gt;constrained()</code> creates a foreign key: every item's category must exist, and <code>cascadeOnDelete</code> means deleting a category deletes its items.</li>
+  <li><code>timestamps()</code> adds <code>created_at</code> and <code>updated_at</code> automatically.</li>
+</ul>
+
+<div class="warn"><strong>Real-life lesson:</strong> in this very project the <code>unique</code> index on <code>items.slug</code> was declared in the migration but never actually created in the live database — a kind of schema drift. Re-importing a spreadsheet silently produced duplicate rows. We had to add a later migration to create the missing index. The migration file is the <em>source of truth</em> for what the schema should be; the live database must be kept in sync with it.</div>
+
+<h2 id="controller">9. The Controller Layer: Thin Coordinators</h2>
+<p>Controllers live in <code>app/Http/Controllers/</code>. Each public method is a <strong>controller action</strong> that handles one kind of request. The golden rule: <strong>controllers should be thin</strong> — validate input, ask the Model for data, pass it to a View. Heavy logic belongs in the Model.</p>
+
+<h3>9.1 HomeController</h3>
+<pre><code>class HomeController extends Controller
+{
+    public function index()
+    {
+        $categories = Category::query()-&gt;orderBy('name')-&gt;get();
+        $featuredItems = Item::query()-&gt;where('is_featured', 1)-&gt;orderByDesc('id')-&gt;limit(12)-&gt;get();
+        $clearanceItems = Item::query()-&gt;where('is_clearance', 1)-&gt;orderByDesc('id')-&gt;limit(12)-&gt;get();
+
+        $hero = [ 'title' =&gt; 'Welcome to Super Mart', /* ... */ ];
+
+        return view('welcome', compact('categories', 'featuredItems', 'clearanceItems', 'hero'));
+    }
+}</code></pre>
+<p>It queries two lists of items, builds a hero banner array, and passes everything to the <code>welcome</code> view with <code>compact()</code> (a PHP helper that builds <code>['categories' =&gt; $categories, ...]</code>). The controller does not know how the page <em>looks</em>; it only knows what data the page <em>needs</em>.</p>
+
+<h3>9.2 CategoryController</h3>
+<pre><code>public function show(string $slug)
+{
+    $category = Category::query()-&gt;where('slug', $slug)-&gt;firstOrFail();
+    $categories = Category::query()-&gt;orderBy('name')-&gt;get();
+    $items = Item::query()-&gt;where('category_id', $category-&gt;id)-&gt;orderByDesc('id')-&gt;limit(36)-&gt;get();
+
+    $hero = [ 'title' =&gt; $category-&gt;name, 'image' =&gt; $category-&gt;hero_image_url, /* ... */ ];
+
+    return view('category', compact('category', 'categories', 'items', 'hero'));
+}</code></pre>
+<p><code>firstOrFail()</code> returns the category or a 404 if no category has that slug — a clean way to handle "page not found."</p>
+
+<h2 id="routing">10. Routing: Connecting URLs to Controllers</h2>
+<p>Routes live in <code>routes/web.php</code>. A route maps a URL + method to a controller method, and gives it a <strong>name</strong> so the rest of the app can link to it without hard-coding the URL.</p>
+<pre><code>Route::get('/', [HomeController::class, 'index'])-&gt;name('home');
+Route::get('/category/{slug}', [CategoryController::class, 'show'])-&gt;name('category.show');
+
+Route::post('/cart/add/{item}', [CartController::class, 'add'])-&gt;name('cart.add');
+Route::get('/cart', [CartController::class, 'index'])-&gt;name('cart.index');
+Route::delete('/cart/remove/{item}', [CartController::class, 'remove'])-&gt;name('cart.remove');
+Route::post('/cart/update', [CartController::class, 'update'])-&gt;name('cart.update');
+
+Route::get('/admin', [ImportProductController::class, 'admin'])-&gt;name('admin');
+Route::post('/admin', [ImportProductController::class, 'uploadExcel'])-&gt;name('admin.upload');</code></pre>
+<p>Things to notice:</p>
+<ul>
+  <li><code>{slug}</code> and <code>{item}</code> are <strong>route parameters</strong> — whatever is in the URL gets passed as an argument.</li>
+  <li>The <strong>HTTP method matters</strong>: <code>cart.add</code> is <code>POST</code> (it changes data), <code>cart.remove</code> is <code>DELETE</code>. Using the right verb is part of RESTful design.</li>
+  <li><code>-&gt;name('cart.add')</code> lets the View say <code>route('cart.add', $item)</code> instead of writing <code>/cart/add/5</code>. If the URL changes later, the links still work.</li>
+</ul>
+
+<h2 id="middleware">11. Middleware: Gatekeepers Before the Controller</h2>
+<p><strong>Middleware</strong> runs <em>before</em> the controller, inspecting or redirecting the request. Super Mart has two custom middleware in <code>app/Http/Middleware/</code>:</p>
+<pre><code>class EnsureAuthenticated
+{
+    public function handle(Request $request, Closure $next)
+    {
+        if (!$request-&gt;session()-&gt;has('user_id')) {
+            return redirect()-&gt;route('account');
+        }
+        return $next($request);
+    }
+}</code></pre>
+<pre><code>class EnsureGuest
+{
+    public function handle(Request $request, Closure $next)
+    {
+        if ($request-&gt;session()-&gt;has('user_id')) {
+            return redirect()-&gt;route('account');
+        }
+        return $next($request);
+    }
+}</code></pre>
+<p><code>EnsureAuthenticated</code> blocks logged-out users from protected pages; <code>EnsureGuest</code> does the opposite, keeping logged-in users away from the login/register pages. By doing this in middleware, no controller has to repeat "is the user logged in?" — the check lives in one place. This is the MVC philosophy extended: <em>cross-cutting concerns belong outside the controller.</em></p>
+
+<h2 id="view">12. The View Layer: Blade Templates</h2>
+<p>Views live in <code>resources/views/</code>. Super Mart has <code>welcome.blade.php</code> (home), <code>category.blade.php</code>, <code>allcategories.blade.php</code>, <code>cart.blade.php</code>, <code>admin.blade.php</code>, <code>account-info.blade.php</code>, <code>login.blade.php</code>, plus <code>auth/</code> and <code>components/</code> directories.</p>
+
+<p>A View only renders the variables it is given. For example, an item card on the home page:</p>
+<pre><code>@if(!empty($item-&gt;image))
+    &lt;img class="product-image" src="{{ asset('images/items/' . $item-&gt;image) }}" alt="{{ $item-&gt;name }}"&gt;
+@endif</code></pre>
+<p>The View does not query the database — the controller already passed <code>$item</code>. It does not decide where the image lives — it just builds the URL from the filename the model stored. <code>{{ ... }}</code> escapes the output to prevent XSS attacks.</p>
+
+<div class="callout"><strong>The discipline:</strong> if you ever find yourself writing a database query inside a Blade template, you are breaking MVC. Move that query to the controller (or better, a Model method) and pass the result in.</div>
+
+<h2 id="storefront">13. Feature: The Storefront</h2>
+<p>The home page (<code>GET /</code> → <code>HomeController::index</code>) shows all categories, twelve featured items, twelve clearance items, and a hero banner. The controller gathers them; the <code>welcome</code> view renders cards for each item with its image, name, and price. If an item has a <code>sale_price</code>, the cart logic later uses it; the storefront shows the regular price.</p>
+
+<h2 id="category">14. Feature: Category Pages</h2>
+<p><code>GET /category/{slug}</code> → <code>CategoryController::show</code>. The slug is looked up; if it exists, the page shows the category's hero image (via the Model accessor we discussed) and up to 36 of its items, newest first. If no category matches, <code>firstOrFail()</code> returns a 404. This single route handles <em>every</em> category — <code>/category/fruits</code>, <code>/category/meats</code>, etc. — because of the <code>{slug}</code> parameter.</p>
+
+<h2 id="cart">15. Feature: The Shopping Cart</h2>
+<p>The cart is interesting because it is stored in the <strong>session</strong>, not the database. The session is per-visitor temporary storage that lives between requests (usually in a cookie or a server file). The cart never hits the database until checkout — so it works even for anonymous visitors.</p>
+
+<p><code>CartController</code> keeps all session access behind two private helpers:</p>
+<pre><code>private function getCart(): array
+{
+    $cart = Session::get('cart', []);
+    return is_array($cart) ? $cart : [];
+}
+
+private function setCart(array $cart): void
+{
+    Session::put('cart', $cart);
+}</code></pre>
+
+<p>The <code>add</code> action:</p>
+<pre><code>public function add(Request $request, int $itemId)
+{
+    $quantity = max(1, (int) $request-&gt;input('quantity', 1));
+    $item = Item::query()-&gt;findOrFail($itemId);
+
+    $cart = $this-&gt;getCart();
+    $key = (string) $item-&gt;id;
+
+    if (!isset($cart[$key])) {
+        $cart[$key] = [
+            'item_id' =&gt; $item-&gt;id,
+            'name'    =&gt; $item-&gt;name,
+            'image'   =&gt; $item-&gt;image,
+            'price'   =&gt; (float) ($item-&gt;sale_price ?? $item-&gt;price),
+            'quantity'=&gt; 0,
+        ];
+    }
+    $cart[$key]['quantity'] += $quantity;
+
+    $this-&gt;setCart($cart);
+    return redirect()-&gt;route('cart.index')-&gt;with('success', 'Added to cart');
+}</code></pre>
+<p>Notice: it uses the sale price if one exists, falling back to the regular price. The subtotal is computed in the <code>index</code> action — in the controller, not in the View:</p>
+<pre><code>foreach ($cart as $row) {
+    $totals['subtotal'] += ((float) $row['price']) * ((int) $row['quantity']);
+}</code></pre>
+<p>This is the MVC discipline again: presentation data (the subtotal) is prepared by the controller, so the template just prints <code>{{ $totals['subtotal'] }}</code>.</p>
+
+<h3>15.1 Why the verbs matter</h3>
+<p>Adding to the cart is a <code>POST</code> (it changes data); removing is <code>DELETE</code>; updating quantities is <code>POST</code>. A link (<code>&lt;a href&gt;</code>) can only do a <code>GET</code>, so the add-to-cart button must be a <form> with <code>method="POST"</code> and a <code>@csrf</code> field. This was an actual bug in the project's history: add-to-cart links used <code>GET</code> but the route was <code>POST</code>-only, so they failed. The fix was to make the Blade submit a POST form.</p>
+
+<h2 id="auth">16. Feature: Authentication</h2>
+<p>Authentication is deliberately hand-rolled (rather than using Laravel's built-in Auth scaffolding) so the mechanics are visible. It has three pieces: register, login, logout, plus an account page.</p>
+
+<h3>16.1 Register</h3>
+<pre><code>$validated = $request-&gt;validate([
+    'name'     =&gt; ['required', 'string', 'max:255'],
+    'email'    =&gt; ['required', 'email', 'max:255', 'unique:users,email'],
+    'password' =&gt; ['required', 'string', 'min:8', 'confirmed'],
+]);
+
+$user = User::create([
+    'name'     =&gt; $validated['name'],
+    'email'    =&gt; $validated['email'],
+    'password' =&gt; Hash::make($validated['password']),
+]);
+
+$request-&gt;session()-&gt;put('user_id', $user-&gt;id);
+return redirect()-&gt;route('home')-&gt;with('success', 'Account created successfully');</code></pre>
+<p><code>validate</code> both checks the rules and returns only the safe fields. <code>Hash::make</code> one-way-encrypts the password; the plain text is never stored. <code>confirmed</code> requires a matching <code>password_confirmation</code> field. After creating the user, we put <code>user_id</code> in the session — that is what "being logged in" means in this app.</p>
+
+<h3>16.2 Login</h3>
+<pre><code>$user = User::query()-&gt;where('email', $validated['email'])-&gt;first();
+
+if (!$user || !Hash::check($validated['password'], $user-&gt;password)) {
+    return back()-&gt;withInput()-&gt;with('error', 'Invalid credentials');
+}
+
+$request-&gt;session()-&gt;put('user_id', $user-&gt;id);
+$request-&gt;session()-&gt;put('user_name', $user-&gt;name);
+$request-&gt;session()-&gt;put('user_email', $user-&gt;email);</code></pre>
+<p><code>Hash::check</code> compares the submitted password against the stored hash — the stored password is never decrypted (it cannot be; hashing is one-way). On success, the session marks the user as logged in.</p>
+
+<h3>16.3 Logout</h3>
+<pre><code>$request-&gt;session()-&gt;forget('user_id');
+$request-&gt;session()-&gt;forget('user_name');
+$request-&gt;session()-&gt;forget('user_email');</code></pre>
+<p>Logging out is simply removing those keys from the session. The "logged in" state is entirely a question of whether <code>session('user_id')</code> exists — which is exactly what the <code>EnsureAuthenticated</code> middleware checks.</p>
+
+<h2 id="import">17. Feature: The Admin Product Import</h2>
+<p>This is the most complex feature, and a great study of a real controller job: reading a spreadsheet, cleaning the data, resolving relationships, and saving — all safely.</p>
+
+<p>The admin page (<code>GET /admin</code>) shows a form to upload an Excel file plus optional product images. The form posts to <code>POST /admin</code> → <code>ImportProductController::uploadExcel</code>. There is also a link to download a blank template spreadsheet from <code>public/templates/</code>.</p>
+
+<h3>17.1 Reading the spreadsheet</h3>
+<p>Using the <code>maatwebsite/excel</code> package, the controller reads the uploaded file into arrays:</p>
+<pre><code>$sheets = Excel::toArray([], $file);
+$rows = $sheets[0];   // first worksheet</code></pre>
+
+<h3>17.2 Detecting headers</h3>
+<p>Real spreadsheets may or may not have a header row. The code checks whether the first row contains words like "name", "slug", or "category":</p>
+<pre><code>$hasHeading = in_array('name', $firstLower, true)
+            || in_array('category', $firstLower, true)
+            || in_array('slug', $firstLower, true);
+$startIndex = $hasHeading ? 1 : 0;</code></pre>
+<p>If headers exist, each row is keyed by its header name; otherwise a fixed column order is assumed. This makes the importer tolerant of both styles.</p>
+
+<h3>17.3 Resolving the category</h3>
+<p>The spreadsheet's category column can hold either a numeric id or a category <em>name</em> like "Meats". The controller handles both:</p>
+<pre><code>// If it's a number, look the category up by id
+if (!empty($assoc['category_id']) &amp;&amp; is_numeric($assoc['category_id'])) {
+    $cat = Category::find((int) $assoc['category_id']);
+    if ($cat) $categoryId = $cat-&gt;id;
+}
+
+// Otherwise, treat the value as a name and find-or-create the category
+if (empty($categoryId)) {
+    $catName = $assoc['category']
+        ?? $assoc['category_name']
+        ?? (is_string($assoc['category_id'] ?? null) ? $assoc['category_id'] : null)
+        ?? 'uncategorized';
+    $cat = Category::firstOrCreate(['slug' =&gt; Str::slug($catName)], ['name' =&gt; $catName]);
+    $categoryId = $cat-&gt;id;
+}</code></pre>
+<p><code>firstOrCreate</code> either finds an existing category with that slug or creates one — so importing a product in a new category automatically creates the category.</p>
+
+<h3>17.4 Cleaning the data</h3>
+<p>Spreadsheets are messy. Prices may be written as "₦1,200.50" or "1,200". The importer normalises them:</p>
+<pre><code>$parseNumeric = function ($value) {
+    if ($value === null || $value === '') return null;
+    $v = str_replace([',', ' ', "\xc2\xa0", '$', '£', '€', '₦'], '', (string) $value);
+    $v = preg_replace('/[^0-9.\-]/', '', $v);
+    return is_numeric($v) ? (float) $v : null;
+};</code></pre>
+<p>And boolean flags like "yes"/"true"/"1" become <code>1</code>, anything else becomes <code>0</code>:</p>
+<pre><code>$toBoolInt = function ($val) {
+    if ($val === null || $val === '') return 0;
+    return in_array(strtolower((string) $val), ['1','true','yes','y'], true) ? 1 : 0;
+};</code></pre>
+
+<h3>17.5 Inserting safely: transactions and firstOrCreate</h3>
+<p>The whole loop runs inside a <strong>database transaction</strong>:</p>
+<pre><code>DB::beginTransaction();
+// ... loop inserting items ...
+DB::commit();   // all good → save everything
+// on any exception:
+DB::rollBack(); // undo everything → no half-import</code></pre>
+<p>A transaction means either all rows insert, or none do — never a partial import. And each item uses <code>firstOrCreate</code> on the slug:</p>
+<pre><code>$item = Item::firstOrCreate(
+    ['slug' =&gt; $slug],                 // match key
+    [ /* the rest of the fields */ ]
+);</code></pre>
+<p>This makes the import <strong>idempotent</strong>: re-importing the same sheet does not duplicate rows — existing slugs are skipped. (We will revisit this in the bugs section.)</p>
+
+<h3>17.6 Saving uploaded images</h3>
+<p>The controller also saves any uploaded product images to <code>public/images/items/</code> using their original filenames:</p>
+<pre><code>$file-&gt;move($destination, $originalName);</code></pre>
+<p>The spreadsheet's <code>image</code> column stores the filename, and the storefront renders <code>asset('images/items/' . $item-&gt;image)</code>. So for the image to display, the uploaded filename must match what the spreadsheet says.</p>
+
+<h2 id="end-to-end">18. Putting It All Together: One Request, End to End</h2>
+<p>Let us trace a real request: a visitor clicks "Meats" on the home page.</p>
+<ol>
+  <li><strong>Browser</strong> sends <code>GET /category/meats</code> to the server.</li>
+  <li><strong>Laravel's router</strong> matches it against <code>Route::get('/category/{slug}', [CategoryController::class, 'show'])</code> with <code>$slug = 'meats'</code>.</li>
+  <li><strong>Middleware</strong> runs (none restricts this public page).</li>
+  <li><strong>CategoryController::show('meats')</strong> runs.</li>
+  <li>It asks the <strong>Model</strong>: <code>Category::where('slug','meats')-&gt;firstOrFail()</code>. Eloquent runs <code>SELECT * FROM categories WHERE slug = 'meats'</code> against the <strong>database</strong>.</li>
+  <li>The database returns the Meats row; Eloquent turns it into a <code>Category</code> object.</li>
+  <li>The controller fetches the items: <code>Item::where('category_id', $category-&gt;id)...-&gt;get()</code> → another SQL query → a collection of <code>Item</code> objects.</li>
+  <li>The controller calls <code>view('category', compact(...))</code>, handing the data to the <strong>View</strong>.</li>
+  <li>The Blade template renders HTML, using <code>$category-&gt;hero_image_url</code> (the Model accessor) and looping over <code>$items</code>.</li>
+  <li>Laravel sends the finished HTML back as the <strong>response</strong>.</li>
+  <li>The <strong>browser</strong> renders the page.</li>
+</ol>
+<p>That is MVC in action: the request entered through the controller, the model supplied the data, the view shaped the output, and each layer stayed in its lane.</p>
+
+<h2 id="bugs">19. Bugs We Hit and How We Fixed Them</h2>
+<p>Real projects teach through their bugs. Here are the ones we hit, each one a lesson about MVC or the framework.</p>
+
+<h3>19.1 Add-to-cart used the wrong HTTP method</h3>
+<p><strong>Symptom:</strong> clicking "Add to cart" failed.</p>
+<p><strong>Cause:</strong> the Blade used an <code>&lt;a href&gt;</code> link (a GET) but the route was <code>Route::post('/cart/add/{item}', ...)</code>. A GET request cannot match a POST-only route.</p>
+<p><strong>Fix:</strong> change the link to a <code>&lt;form method="POST"&gt;</code> with <code>@csrf</code>, posting to <code>route('cart.add', $item)</code>.</p>
+<p><strong>Lesson:</strong> HTTP methods are not decorative — they are part of the route's identity.</p>
+
+<h3>19.2 The categories table had no primary key</h3>
+<p><strong>Symptom:</strong> importing a spreadsheet failed with <code>NOT NULL constraint failed: categories.id</code>.</p>
+<p><strong>Cause:</strong> the live <code>categories</code> table had been created with <code>id</code> as a NOT NULL column that was <em>neither</em> a primary key <em>nor</em> auto-increment. So any <code>Category::create()</code> failed — and the importer tried to create an "uncategorized" category whenever it could not match the sheet's category, which crashed the whole import.</p>
+<p><strong>Fix:</strong> a migration that recreates <code>categories</code> with a proper <code>$table-&gt;id()</code>, preserving the existing rows and their ids.</p>
+<p><strong>Lesson:</strong> the migration is the source of truth; the live DB can drift from it. Verify the actual schema with <code>PRAGMA table_info</code>, not just by reading the migration file.</p>
+
+<h3>19.3 The importer read the wrong column</h3>
+<p><strong>Symptom:</strong> the sheet had a <code>category_id</code> column holding the name "Meats", but the importer looked for a column named <code>category</code> (which did not exist), defaulted to "uncategorized", and crashed.</p>
+<p><strong>Cause:</strong> a mismatch between the spreadsheet's column names and the importer's expected keys.</p>
+<p><strong>Fix:</strong> add a fallback so that when <code>category_id</code> holds a string, it is treated as the category name.</p>
+<p><strong>Lesson:</strong> real-world data does not always match your assumptions. Build importers that tolerate the shapes you will actually receive.</p>
+
+<h3>19.4 Re-importing duplicated items</h3>
+<p><strong>Symptom:</strong> uploading the same spreadsheet twice produced exact duplicate rows.</p>
+<p><strong>Cause:</strong> the <code>items.slug</code> unique index declared in the migration was never created in the live database, so nothing stopped the duplicate. And <code>Item::create()</code> always inserted.</p>
+<p><strong>Fix:</strong> two changes — (a) a migration to create the missing <code>items_slug_unique</code> index, and (b) change <code>Item::create()</code> to <code>Item::firstOrCreate(['slug' =&gt; $slug], [...])</code> so existing slugs are skipped.</p>
+<p><strong>Lesson:</strong> a unique constraint is a <em>database</em> rule — but the application should still behave well when the constraint would fire. <code>firstOrCreate</code> makes the operation idempotent.</p>
+
+<h3>19.5 A broken image from a typo</h3>
+<p><strong>Symptom:</strong> an imported item's image did not display, even though the image file was in the correct folder.</p>
+<p><strong>Cause:</strong> the spreadsheet said <code>raw-chiken.jpg</code> (a typo) but the uploaded file was named <code>raw-chicken.jpg</code>. The importer stored the spreadsheet's value, and the storefront rendered <code>images/items/raw-chiken.jpg</code> — a file that did not exist.</p>
+<p><strong>Fix:</strong> correct the spreadsheet (or the database row) so the filename matches the uploaded file.</p>
+<p><strong>Lesson:</strong> when two sources of truth must agree (the filename and the spreadsheet's <code>image</code> cell), a mismatch produces a silent failure — a broken image, not an error. Validate that they match.</p>
+
+<h2 id="lessons">20. What This Project Taught Us About MVC</h2>
+<ul>
+  <li><strong>The Model is not just storage.</strong> Accessors like <code>hero_image_url</code> and relationships like <code>items()</code> put data logic where it belongs — on the thing that owns the data.</li>
+  <li><strong>The Controller should be boring.</strong> Validate, fetch, pass to the view. If a controller method is long, logic is probably leaking out of the Model.</li>
+  <li><strong>The View should be dumb.</strong> It renders what it is given. No queries, no decisions about where data comes from.</li>
+  <li><strong>The database enforces rules the app should not have to repeat.</strong> Unique constraints, foreign keys, and not-null columns catch bugs at the storage layer.</li>
+  <li><strong>Middleware handles cross-cutting concerns.</strong> Auth checks, CSRF, guest-gating — none of these belong in every controller.</li>
+  <li><strong>Names matter.</strong> Named routes (<code>route('cart.add')</code>) decouple URLs from links. Slugs make URLs readable and stable.</li>
+  <li><strong>Transactions keep data consistent.</strong> An import either fully succeeds or fully rolls back — never a half-written state.</li>
+  <li><strong>Idempotence is a virtue.</strong> An operation you can run twice safely (<code>firstOrCreate</code>) is an operation you can trust.</li>
+</ul>
+
+<p>By the end, the layers of Super Mart are:</p>
+<div class="diagram">  routes/web.php          — URL → controller mapping
+       │
+  Middleware              — auth / guest gates
+       │
+  Controllers (app/Http)  — validate, fetch, hand off
+       │
+  Models (app/Models)     — data, relationships, accessors
+       │
+  Eloquent → SQLite       — persistence
+       │
+  Views (resources/views) — render HTML
+       │
+  Response → Browser</div>
+
+<h2 id="glossary">21. Glossary</h2>
+<table>
+  <tr><th>Term</th><th>Meaning</th></tr>
+  <tr><td>Blade</td><td>Laravel's templating engine; HTML with directives like <code>@if</code>, <code>{{ $x }}</code>.</td></tr>
+  <tr><td>Controller</td><td>The MVC layer that receives requests and coordinates Model and View.</td></tr>
+  <tr><td>CSRF</td><td>Cross-Site Request Forgery; Laravel's <code>@csrf</code> field protects POST forms.</td></tr>
+  <tr><td>Eloquent</td><td>Laravel's ORM; maps database tables to PHP objects.</td></tr>
+  <tr><td>Fillable</td><td>The list of columns allowed for mass assignment; a security guard.</td></tr>
+  <tr><td>firstOrCreate</td><td>Find the first matching record, or create it; idempotent.</td></tr>
+  <tr><td>Foreign key</td><td>A column referencing another table's primary key; enforces relationships.</td></tr>
+  <tr><td>HTTP method</td><td>GET, POST, PUT, DELETE — the kind of action a request represents.</td></tr>
+  <tr><td>Migration</td><td>A version-controlled PHP file that changes the database schema.</td></tr>
+  <tr><td>Model</td><td>The MVC layer representing data and the rules around it.</td></tr>
+  <tr><td>Middleware</td><td>Code that runs before a controller to inspect or redirect a request.</td></tr>
+  <tr><td>ORM</td><td>Object-Relational Mapper; works with DB rows as objects (Eloquent is one).</td></tr>
+  <tr><td>Route</td><td>A mapping from a URL + method to a controller method.</td></tr>
+  <tr><td>Session</td><td>Per-visitor temporary storage that persists across requests.</td></tr>
+  <tr><td>Slug</td><td>A URL-friendly string, e.g. "frozen-chicken".</td></tr>
+  <tr><td>Transaction</td><td>A group of DB operations that all succeed or all roll back.</td></tr>
+  <tr><td>View</td><td>The MVC layer that renders the user interface.</td></tr>
+</table>
+
+<div class="footer">
+  Super Mart — a study of MVC architecture, built with Laravel 12.<br>
+  Prepared as a walkthrough document of the project's concepts and implementation.
+</div>
+
+</body>
+</html>
